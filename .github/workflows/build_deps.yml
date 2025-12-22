@@ -32,28 +32,32 @@ jobs:
           key: ${{ inputs.cache-key }}
           fail-on-cache-miss: false
 
-      - name: Install System Dependencies
+      - name: Banish Ninja and Install Make
         run: |
           sudo apt-get update
-          # Adding the specific dev libs helps 'make' find them natively
-          sudo apt-get install -y libgtk-3-dev libglew-dev m4 libdbus-1-dev \
-            binutils-aarch64-linux-gnu build-essential libpng-dev libjpeg-dev
+          # This is the secret move: remove ninja so the script can't use it
+          sudo apt-get purge -y ninja-build
+          sudo apt-get install -y libgtk-3-dev libglew-dev m4 libdbus-1-dev binutils-aarch64-linux-gnu build-essential
           chmod +x ./BuildLinux.sh
 
-      - name: Run Build Scripts (Using Make)
+      - name: Run Build Scripts (Forced Make)
         if: inputs.valid-cache == false
         run: |
           sudo ./BuildLinux.sh -u
           
-          # DITCH NINJA: Force CMake to use Makefiles
+          # Wipe the old Ninja-style memory
+          find . -name "CMakeCache.txt" -delete
+          find . -name "CMakeFiles" -type d -exec rm -rf {} +
+          
+          # Tell the system we want Makefiles
           export CMAKE_GENERATOR="Unix Makefiles"
           
-          # Clean the circular links one last time
+          # Fix the symbolic link loop
           if [ -d "./deps/build/destdir" ]; then
             find ./deps/build/destdir -type l -delete || true
           fi
           
-          # Build - 'make' is much better at recovering missing files than ninja
+          # Build dependencies and the Slicer app
           ./BuildLinux.sh -d
           ./BuildLinux.sh -i
 
