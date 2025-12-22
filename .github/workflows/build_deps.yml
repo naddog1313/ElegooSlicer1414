@@ -46,14 +46,26 @@ jobs:
         with:
           cmakeVersion: "~3.28.0"
 
-      # Add your build steps below depending on the OS
       - name: Install tools Linux
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libglew-dev m4 libdbus-1-dev
           
-      - name: Build deps
+            - name: Install system dependencies
+        if: runner.os == 'Linux'
         run: |
-          echo "Starting build for ${{ inputs.os }} on ${{ inputs.arch }}"
-          # Replace this with your actual build command, e.g., ./build_deps.sh
+          sudo ./BuildLinux.sh -u
+
+      - name: Build dependencies
+        run: |
+          # -d builds the dependencies in the ./deps folder
+          ./BuildLinux.sh -d
+
+      - name: Upload Artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deps-${{ inputs.os }}-${{ inputs.arch }}
+          path: ${{ inputs.cache-path }}
+          retention-days: 5
