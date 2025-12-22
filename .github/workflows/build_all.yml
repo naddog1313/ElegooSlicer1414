@@ -1,6 +1,12 @@
 name: Build all
 
 on:
+  workflow_dispatch:
+    inputs:
+      build-deps-only:
+        description: 'Only build dependencies'
+        type: boolean
+        default: false
   push:
     branches:
       - main
@@ -13,33 +19,20 @@ on:
   pull_request:
     branches:
       - main
-  workflow_dispatch:
-    inputs:
-      build-deps-only:
-        description: 'Only build dependencies'
-        type: boolean
-        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build_all:
-    name: Build All
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-14
-            arch: x86_64
-          - os: macos-14
-            arch: arm64
-    uses: ./.github/workflows/build_check_cache.yml
+  build_linux_arm64:
+    name: Build Linux ARM64
+    # We use ubuntu-latest as the factory to build the app
+    uses: ./.github/workflows/build_deps.yml
     with:
-      os: ${{ matrix.os }}
-      arch: ${{ matrix.arch }}
-      build-deps-only: ${{ inputs.build-deps-only || false }}
+      os: 'ubuntu-latest'
+      arch: 'aarch64'
       cache-path: 'deps/build'
-      cache-key: 'elegoo-deps-${{ matrix.os }}-${{ matrix.arch }}'
+      cache-key: 'elegoo-linux-arm64-v1'
+      valid-cache: false
     secrets: inherit
