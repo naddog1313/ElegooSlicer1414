@@ -8,26 +8,13 @@ on:
         type: boolean
         default: false
   push:
-    branches:
-      - main
-    paths:
-      - 'deps/**'
-      - 'src/**'
-      - '**/CMakeLists.txt'
-      - 'version.inc'
-      - ".github/workflows/build_*.yml"
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [ main ]
 
 jobs:
   build_linux_arm64:
     name: Build Linux ARM64
-    # We use ubuntu-latest as the factory to build the app
     uses: ./.github/workflows/build_deps.yml
     with:
       os: 'ubuntu-latest'
