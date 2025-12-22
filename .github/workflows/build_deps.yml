@@ -41,27 +41,36 @@ jobs:
       - name: Run Build Scripts
         if: inputs.valid-cache == false
         run: |
-          # 1. System libs
+          # 1. Prepare system
           sudo ./BuildLinux.sh -u
-          # 2. Reset broken links
+          
+          # 2. THE NINJA-SLAYER FIX:
+          # Delete the "Stamps" for the libraries Ninja is crying about.
+          # This forces the factory to RE-INSTALL them into the destdir folder.
+          echo "Forcing re-install of missing Ninja dependencies..."
+          rm -f ./deps/build/dep_libpng-prefix/src/dep_libpng-stamp/* || true
+          rm -f ./deps/build/dep_libjpeg-prefix/src/dep_libjpeg-stamp/* || true
+          rm -f ./deps/build/dep_zlib-prefix/src/dep_zlib-stamp/* || true
+          
+          # 3. THE ELOOP FIX: Clear broken shortcuts
           if [ -d "./deps/build/destdir" ]; then
             find ./deps/build/destdir -type l -delete || true
           fi
-          # 3. Build deps and app (Ignore packaging errors to get the raw files)
+          
+          # 4. Build - This will now actually put libpng.a back!
           ./BuildLinux.sh -d
-          ./BuildLinux.sh -i || echo "AppImage packaging skipped, raw files will be uploaded."
+          ./BuildLinux.sh -i || echo "AppImage failed, but we will catch the raw files."
 
       - name: Locate ALL Built Files
         run: |
           echo "Searching for results..."
-          find . -maxdepth 10 -name "ElegooSlicer*" -o -name "*.AppImage"
+          find . -maxdepth 10 -name "ElegooSlicer*" -o -name "*.AppImage" -o -name "elegoo-slicer"
 
       - name: Upload Linux ARM64 Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ElegooSlicer-Linux-ARM64
-          # This grabs EVERYTHING: AppImages, folders, and executables
           path: |
             **/*.AppImage
             **/build/src/ElegooSlicer*
