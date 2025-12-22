@@ -41,22 +41,25 @@ jobs:
       - name: Run Build Scripts
         if: inputs.valid-cache == false
         run: |
-          # 1. Update system libraries
+          # 1. Prepare system
           sudo ./BuildLinux.sh -u
           
-          # 2. HACKER FIX: Only delete broken symbolic links (shortcuts)
-          # This fixes the ELOOP error without deleting important files like libjpeg.a
-          if [ -d "./deps/build/destdir" ]; then
-            find ./deps/build/destdir -type l -delete || true
-          fi
+          # 2. THE NINJA-CRUSHER: 
+          # We delete the specific 'build' folders for the parts that are stuck.
+          # This forces Ninja to re-scan and find the .a files (png, jpeg) correctly.
+          echo "Clearing stuck build folders..."
+          rm -rf ./deps/build/dep_wxWidgets-prefix/src/dep_wxWidgets-build || true
+          rm -rf ./deps/build/destdir || true
           
-          # 3. Build dependencies (-d) and the Slicer app (-i)
+          # 3. Rebuild dependencies (-d) to restore missing files
           ./BuildLinux.sh -d
+          
+          # 4. Final App Build (-i)
           ./BuildLinux.sh -i
 
       - name: Locate Built Files
         run: |
-          echo "Searching for results..."
+          echo "Searching for AppImage..."
           find . -name "*.AppImage" -o -name "*.deb"
 
       - name: Upload Linux ARM64 Artifact
