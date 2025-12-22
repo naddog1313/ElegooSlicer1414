@@ -3,22 +3,11 @@ name: Build Dependencies Linux ARM64
 on:
   workflow_call:
     inputs:
-      cache-key:
-        required: true
-        type: string
-      cache-path:
-        required: true
-        type: string
-      os:
-        required: true
-        type: string
-      valid-cache:
-        required: false
-        type: boolean
-        default: false
-      arch:
-        required: false
-        type: string
+      cache-key: { required: true, type: string }
+      cache-path: { required: true, type: string }
+      os: { required: true, type: string }
+      arch: { required: true, type: string }
+      valid-cache: { required: false, type: boolean, default: false }
 
 jobs:
   build_deps:
@@ -32,7 +21,6 @@ jobs:
           lfs: 'true'
 
       - name: Set up QEMU for ARM64
-        # This allows the Intel GitHub server to build for ARM64
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
@@ -53,24 +41,29 @@ jobs:
       - name: Run Build Scripts
         if: inputs.valid-cache == false
         run: |
-          # -u updates system libs, -d builds internal dependencies
+          # Install libs, build math deps, then build the app
           sudo ./BuildLinux.sh -u
           ./BuildLinux.sh -d
-          # -i builds the actual Slicer application
           ./BuildLinux.sh -i
 
-      - name: Debug - List Files
-        # This helps find where the AppImage or binaries are hiding
-        run: find . -maxdepth 5 -name "*Elegoo*"
+      - name: Locate Built Files
+        run: |
+          echo "Searching for results..."
+          find . -name "*.AppImage" -o -name "*.deb"
 
       - name: Upload Linux ARM64 Artifact
-        if: success()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ElegooSlicer-Linux-ARM64
-          path: |
-            **/build/output/*.AppImage
-            **/build/output/*.deb
-            **/deps/build_aarch64/**
+          # The ** searches all subfolders to find the AppImage
+          path: "**/*.AppImage"
           if-no-files-found: warn
           retention-days: 5
+
+      - name: Force Save Cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ inputs.cache-path }}
+          key: ${{ inputs.cache-key }}
