@@ -1,22 +1,19 @@
 name: Build all
 
 on:
+  workflow_dispatch:  # This is your manual "Run" button
+    inputs:
+      build-deps-only:
+        description: 'Only build dependencies'
+        type: boolean
+        default: false
   push:
     branches:
      - main
-    #  - release/*
-    paths:
-     - 'deps/**'
-     - 'src/**'
-     - '**/CMakeLists.txt'
-     - 'version.inc'
-     - 'localization/**'
-     - 'resources/**'
-     - ".github/workflows/build_*.yml"
-
   pull_request:
     branches:
      - main
+    
     #  - release/*
     paths:
      - 'deps/**'
@@ -59,6 +56,8 @@ jobs:
       os: ${{ matrix.os }}
       arch: ${{ matrix.arch }}
       build-deps-only: ${{ inputs.build-deps-only || false }}
+         cache-path: 'deps/build'
+      cache-key: 'elegoo-deps-${{ matrix.os }}-${{ matrix.arch }}'
     secrets: inherit
   # flatpak:
   #   name: "Flatpak"
@@ -78,3 +77,4 @@ jobs:
   #       manifest-path: flatpak/io.github.softfever.OrcaSlicer.yml
   #       cache-key: flatpak-builder-${{ github.sha }}
   #       cache: false
+
