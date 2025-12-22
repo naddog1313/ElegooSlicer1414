@@ -41,13 +41,16 @@ jobs:
       - name: Run Build Scripts
         if: inputs.valid-cache == false
         run: |
-          # 1. Update system libs
+          # 1. Update system libraries
           sudo ./BuildLinux.sh -u
           
-          # 2. HACKER FIX: Clear the folder that causes the ELOOP (too many links) error
-          rm -rf ./deps/build/destdir
+          # 2. HACKER FIX: Only delete broken symbolic links (shortcuts)
+          # This fixes the ELOOP error without deleting important files like libjpeg.a
+          if [ -d "./deps/build/destdir" ]; then
+            find ./deps/build/destdir -type l -delete || true
+          fi
           
-          # 3. Build deps and the app
+          # 3. Build dependencies (-d) and the Slicer app (-i)
           ./BuildLinux.sh -d
           ./BuildLinux.sh -i
 
