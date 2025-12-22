@@ -41,8 +41,13 @@ jobs:
       - name: Run Build Scripts
         if: inputs.valid-cache == false
         run: |
-          # Install libs, build math deps, then build the app
+          # 1. Update system libs
           sudo ./BuildLinux.sh -u
+          
+          # 2. HACKER FIX: Clear the folder that causes the ELOOP (too many links) error
+          rm -rf ./deps/build/destdir
+          
+          # 3. Build deps and the app
           ./BuildLinux.sh -d
           ./BuildLinux.sh -i
 
@@ -56,7 +61,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ElegooSlicer-Linux-ARM64
-          # The ** searches all subfolders to find the AppImage
           path: "**/*.AppImage"
           if-no-files-found: warn
           retention-days: 5
