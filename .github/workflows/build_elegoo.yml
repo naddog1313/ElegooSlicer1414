@@ -1,18 +1,27 @@
 on:
-    workflow_call:
-      inputs:
-        cache-key:
-          required: true
-          type: string
-        cache-path:
-          required: true
-          type: string
-        os:
-          required: true
-          type: string
-        arch:
-          required: false
-          type: string
+  workflow_dispatch:
+    inputs:
+      cache-key:
+        description: 'Cache Key'
+        required: true
+        default: 'linux-deps'
+      cache-path:
+        description: 'Path to deps'
+        required: true
+        default: 'deps/build'
+      os:
+        description: 'OS to build on'
+        required: true
+        default: 'ubuntu-latest'
+      arch:
+        description: 'Architecture'
+        required: false
+        default: 'x86_64'
+  workflow_call:
+    inputs:
+      cache-key:
+        required: true
+        type: string
 
 jobs:
   build_elegoo:
@@ -34,7 +43,7 @@ jobs:
         with:
           path: ${{ inputs.cache-path }}
           key: ${{ inputs.cache-key }}
-          fail-on-cache-miss: true
+          fail-on-cache-miss: false
 
       - uses: lukka/get-cmake@latest
         with:
