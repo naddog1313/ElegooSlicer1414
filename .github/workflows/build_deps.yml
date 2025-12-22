@@ -35,39 +35,36 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libglew-dev m4 libdbus-1-dev binutils-aarch64-linux-gnu
+          sudo apt-get install -y libgtk-3-dev libglew-dev m4 libdbus-1-dev binutils-aarch64-linux-gnu appimagetool
           chmod +x ./BuildLinux.sh
 
       - name: Run Build Scripts
         if: inputs.valid-cache == false
         run: |
-          # 1. Prepare system
           sudo ./BuildLinux.sh -u
-          
-          # 2. THE NINJA-CRUSHER: 
-          # We delete the specific 'build' folders for the parts that are stuck.
-          # This forces Ninja to re-scan and find the .a files (png, jpeg) correctly.
-          echo "Clearing stuck build folders..."
-          rm -rf ./deps/build/dep_wxWidgets-prefix/src/dep_wxWidgets-build || true
-          rm -rf ./deps/build/destdir || true
-          
-          # 3. Rebuild dependencies (-d) to restore missing files
+          # Nuclear reset of broken links
+          if [ -d "./deps/build/destdir" ]; then
+            find ./deps/build/destdir -type l -delete || true
+          fi
           ./BuildLinux.sh -d
-          
-          # 4. Final App Build (-i)
+          # Force build and install
           ./BuildLinux.sh -i
 
-      - name: Locate Built Files
+      - name: Locate ALL Built Files
         run: |
-          echo "Searching for AppImage..."
-          find . -name "*.AppImage" -o -name "*.deb"
+          echo "Listing all files in build directory to find the slicer..."
+          find . -maxdepth 10 -executable -type f -name "*elegoo*" -o -name "*.AppImage"
 
       - name: Upload Linux ARM64 Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ElegooSlicer-Linux-ARM64
-          path: "**/*.AppImage"
+          # Wide search for any executable or AppImage
+          path: |
+            **/*.AppImage
+            **/*slicer*
+            **/build/output/*
           if-no-files-found: warn
           retention-days: 5
 
