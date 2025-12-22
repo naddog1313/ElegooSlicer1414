@@ -46,17 +46,30 @@ jobs:
         with:
           cmakeVersion: "~3.28.0"
 
-      - name: Run Build Scripts
+      - name: Run Build Scripts (Linux)
         if: runner.os == 'Linux' && inputs.valid-cache == false
         run: |
           chmod +x ./BuildLinux.sh
           sudo ./BuildLinux.sh -u
           ./BuildLinux.sh -d
 
+      - name: Run Build Scripts (Mac)
+        if: runner.os == 'macOS' && inputs.valid-cache == false
+        run: |
+          chmod +x ./build_release_macos.sh
+          ./build_release_macos.sh -s -n -x -a ${{ inputs.arch }} -t 10.15 -1
+
+      - name: Debug - List Files
+        run: find . -maxdepth 5 -name "*Elegoo*"
+
       - name: Upload Artifacts
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: deps-${{ inputs.os }}-${{ inputs.arch }}
-          path: ${{ inputs.cache-path }}
+          # The ** search ensures we find the files even if the path is long
+          path: |
+            **/build_${{ inputs.arch }}/**
+            **/ElegooSlicer_dep_${{ inputs.arch }}/**
+          if-no-files-found: error
           retention-days: 5
