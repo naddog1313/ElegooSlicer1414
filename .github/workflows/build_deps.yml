@@ -35,47 +35,39 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libglew-dev m4 libdbus-1-dev binutils-aarch64-linux-gnu
+          # Adding the specific dev libs helps 'make' find them natively
+          sudo apt-get install -y libgtk-3-dev libglew-dev m4 libdbus-1-dev \
+            binutils-aarch64-linux-gnu build-essential libpng-dev libjpeg-dev
           chmod +x ./BuildLinux.sh
 
-      - name: Run Build Scripts
+      - name: Run Build Scripts (Using Make)
         if: inputs.valid-cache == false
         run: |
-          # 1. Prepare system
           sudo ./BuildLinux.sh -u
           
-          # 2. THE NINJA-SLAYER FIX:
-          # Delete the "Stamps" for the libraries Ninja is crying about.
-          # This forces the factory to RE-INSTALL them into the destdir folder.
-          echo "Forcing re-install of missing Ninja dependencies..."
-          rm -f ./deps/build/dep_libpng-prefix/src/dep_libpng-stamp/* || true
-          rm -f ./deps/build/dep_libjpeg-prefix/src/dep_libjpeg-stamp/* || true
-          rm -f ./deps/build/dep_zlib-prefix/src/dep_zlib-stamp/* || true
+          # DITCH NINJA: Force CMake to use Makefiles
+          export CMAKE_GENERATOR="Unix Makefiles"
           
-          # 3. THE ELOOP FIX: Clear broken shortcuts
+          # Clean the circular links one last time
           if [ -d "./deps/build/destdir" ]; then
             find ./deps/build/destdir -type l -delete || true
           fi
           
-          # 4. Build - This will now actually put libpng.a back!
+          # Build - 'make' is much better at recovering missing files than ninja
           ./BuildLinux.sh -d
-          ./BuildLinux.sh -i || echo "AppImage failed, but we will catch the raw files."
+          ./BuildLinux.sh -i
 
-      - name: Locate ALL Built Files
+      - name: Locate Built Files
         run: |
-          echo "Searching for results..."
-          find . -maxdepth 10 -name "ElegooSlicer*" -o -name "*.AppImage" -o -name "elegoo-slicer"
+          echo "Searching for AppImage..."
+          find . -name "*.AppImage" -o -name "*.deb"
 
       - name: Upload Linux ARM64 Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ElegooSlicer-Linux-ARM64
-          path: |
-            **/*.AppImage
-            **/build/src/ElegooSlicer*
-            **/build/output/*
-            **/deps/build/destdir/**
+          path: "**/*.AppImage"
           if-no-files-found: warn
           retention-days: 5
 
