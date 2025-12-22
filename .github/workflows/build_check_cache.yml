@@ -12,7 +12,13 @@ on:
       build-deps-only:
         required: false
         type: boolean
-  
+      cache-path:        # <--- ADD THIS
+        required: true
+        type: string
+      cache-key:         # <--- ADD THIS
+        required: true
+        type: string
+        
 jobs:
   check_cache: # determines if there is a cache and outputs variables used in caching process
     name: Check Cache
@@ -58,3 +64,4 @@ jobs:
       arch: ${{ inputs.arch }}
       build-deps-only: ${{ inputs.build-deps-only }}
     secrets: inherit
+
