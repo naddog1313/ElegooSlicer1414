@@ -44,9 +44,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - os: ubuntu-20.04
-          # - os: ubuntu-24.04
-          # - os: windows-latest
           - os: macos-14
             arch: x86_64
           - os: macos-14
@@ -56,7 +53,9 @@ jobs:
       os: ${{ matrix.os }}
       arch: ${{ matrix.arch }}
       build-deps-only: ${{ inputs.build-deps-only || false }}
-         cache-path: 'deps/build'
+      cache-path: 'deps/build'
+      cache-key: 'elegoo-deps'
+    secrets: inherit
       cache-key: 'elegoo-deps-${{ matrix.os }}-${{ matrix.arch }}'
     secrets: inherit
   # flatpak:
@@ -77,5 +76,6 @@ jobs:
   #       manifest-path: flatpak/io.github.softfever.OrcaSlicer.yml
   #       cache-key: flatpak-builder-${{ github.sha }}
   #       cache: false
+
 
 
