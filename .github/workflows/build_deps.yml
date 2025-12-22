@@ -35,24 +35,27 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libglew-dev m4 libdbus-1-dev binutils-aarch64-linux-gnu appimagetool
+          sudo apt-get install -y libgtk-3-dev libglew-dev m4 libdbus-1-dev binutils-aarch64-linux-gnu
+          
+          # Manually download appimagetool since it's not in the apt store
+          sudo wget github.com -O /usr/local/bin/appimagetool
+          sudo chmod +x /usr/local/bin/appimagetool
           chmod +x ./BuildLinux.sh
 
       - name: Run Build Scripts
         if: inputs.valid-cache == false
         run: |
           sudo ./BuildLinux.sh -u
-          # Nuclear reset of broken links
+          # Reset broken links
           if [ -d "./deps/build/destdir" ]; then
             find ./deps/build/destdir -type l -delete || true
           fi
           ./BuildLinux.sh -d
-          # Force build and install
           ./BuildLinux.sh -i
 
       - name: Locate ALL Built Files
         run: |
-          echo "Listing all files in build directory to find the slicer..."
+          echo "Searching for results..."
           find . -maxdepth 10 -executable -type f -name "*elegoo*" -o -name "*.AppImage"
 
       - name: Upload Linux ARM64 Artifact
@@ -60,10 +63,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ElegooSlicer-Linux-ARM64
-          # Wide search for any executable or AppImage
           path: |
             **/*.AppImage
-            **/*slicer*
+            **/*.deb
             **/build/output/*
           if-no-files-found: warn
           retention-days: 5
